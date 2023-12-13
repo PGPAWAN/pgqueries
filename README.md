@@ -1,0 +1,2 @@
+# pgqueries
+PostgreSQL Operational Queries.
