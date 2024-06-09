@@ -1,0 +1,5 @@
+-- top CPU
+ps -ef pid,user,ppid,cmd,%mem,%CPU --sort=-%cpu | head
+
+-- top mem
+ps -ef pid,user,ppid,cmd,%mem,%CPU --sort=-%mem | head 
