@@ -2,4 +2,59 @@
 ps -ef pid,user,ppid,cmd,%mem,%CPU --sort=-%cpu | head
 
 -- top mem
-ps -ef pid,user,ppid,cmd,%mem,%CPU --sort=-%mem | head 
+ps -ef pid,user,ppid,cmd,%mem,%CPU --sort=-%mem | head
+
+
+
+ High CPU usage queries
+ ==========================================
+selecy query,dbid,
+round(total_exec_time::numeric, 2) as total_exec_time, calls,
+round(mean_exec_time::numeric, 2) as mean_in_ms,
+round((100 * total_exec_time / sum(total_exec_time::numeric) OVER ())::numeric,2) as percentage_cpu,
+100.0 * shared_blks_hit /nullif(shared_blks_hit + shared_blk_read, 0) as hit_percent
+from pg_stat_statements order by percentage_cpu desc LIMIT 10;
+
+
+Memory Usage query
+===========================================================
+select userid::regrole, dbid,query from pg_stat_statements order by (shared_blks_hit+shared_blks_dirtied) desc LIMIT 10;
+
+
+Top 10 time-consuming queries
+====================================
+select userid::regrole, dbid, mean_exec_time,substring(query,0,100) from pg_stat_statements where dbid='1647' and userid='33323' order by mean_exec_time desc LIMIT 10;
+
+
+select userid::regrole, dbid, total_exec_time,substring(query,0,100) from pg_stat_statements where dbid='1647' and userid='33323' order by total_exec_time desc LIMIT 10;
+
+select userid::regrole, dbid, stddev_exec_time,substring(query,0,100) from pg_stat_statements where dbid='1647' and userid='33323' order by stddev_exec_time desc LIMIT 10;
+
+long running queries
+===================================================
+select userid::regrole,
+mean_exec_time /1000 as mean_exec_time_secs,
+max_exec_time / 1000 as max_exec_time_secs,
+min_exec_time / 1000 as min_exec_time_secs,
+calls,
+substring(query,0,100) as short_query
+from
+pg_stat_statements
+order by mean_exec_time desc;
+
+
+--IO extensive queries
+
+select mean_exec_time/1000 as mean_exec_time_secs,
+calls,
+rows,
+shared_blks_hit,
+shared_blks_read,
+shared_blks_hit(shared_blks_hit + shared_blks_read)::numeric * 100 as hit_ratio,
+(blk_read_time + blk_write_time)/calls as average_io_time_ms,
+substring(query,0,100) as short_query
+from
+pg_stat_statements
+where shared_blks_hit > 0
+order by
+(blk_read_time+blk_write_time)/calls desc;
